@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+
+<head>
+    <title>Potomac River Middair Collision Info</title>
+    <meta charset='utf-8'>
+    <meta name="viewport" content="initial-scale=1,width=device-width,viewport-fit=cover" />
+    <!-- PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css' />
+    <script src='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/loaders/GLTFLoader.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/loaders/STLLoader.js'></script>
+    <!-- Import MapTiler Geocoding Control -->
+    <script src="https://unpkg.com/@maptiler/geocoding-control@latest/maplibregl.umd.js"></script>
+    <link href="https://unpkg.com/@maptiler/geocoding-control@latest/style.css" rel="stylesheet" />
+    <!-- Import turf.js from unpkg-->
+    <script src="https://unpkg.com/@turf/turf@latest"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            transform: scale(1);
+        }
+
+        #map {
+            height: calc(100vh - 40px);
+            width: 100vw;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <input type="range" id="timeSlider" min="1738201554" max="1738201683" value="1738201554" step="0.1"
+        style="width: 80%;">
+        <button id="playButton">Play</button>
+    <script type="importmap">
+        {
+            "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { STLLoader } from 'three/addons/loaders/STLLoader.js'
+
+        const flightsData = {};
+        var playbackActive = false;
+
+        // --- Audio Integration ---
+        // Create the Audio object and set its source.
+        // The ATC audio covers the segment from timestamp 1738201612 to 1738201719.
+        const atcAudio = new Audio("assets/atc-audio.mp3");
+        // Optionally, you can preload the audio:
+        atcAudio.preload = "auto";
+        
+        // Define the timestamps (in the same units as the slider values)
+        const audioStart = 1738201612;
+        const audioEnd   = 1738201719;
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            style:
+                'https://api.maptiler.com/maps/d856b495-1396-447c-80d5-0fd7fca006e0/style.json?key=uxGPO18AyvxUdEGKe02K',
+            zoom: 16,
+            center: [-77.02168887575309, 38.852339192876684],
+            pitch: 60,
+            maxPitch: 88,
+            canvasContextAttributes: { antialias: true } // create the gl context with MSAA antialiasing, so custom layers are antialiased
+        });
+
+        function bearingBetweenCoords([lng1, lat1], [lng2, lat2]) {
+            // Convert lat/lon to radians
+            const toRad = (deg) => deg * Math.PI / 180;
+            const φ1 = toRad(lat1);
+            const φ2 = toRad(lat2);
+            const λ1 = toRad(lng1);
+            const λ2 = toRad(lng2);
+
+            const y = Math.sin(λ2 - λ1) * Math.cos(φ2);
+            const x = Math.cos(φ1) * Math.sin(φ2)
+                - Math.sin(φ1) * Math.cos(φ2) * Math.cos(λ2 - λ1);
+
+            // Bearing in radians
+            let brng = Math.atan2(y, x);
+
+            // Convert to degrees 0..360
+            brng = brng * 180 / Math.PI;
+            return (brng + 360) % 360;
+        }
+
+
+        /**
+ * Given an array of track points sorted by time, and a desired 'timestamp',
+ * return a fully interpolated track object (lat, lon, alt, etc.).
+ *
+ *  - If 'timestamp' is before the first or after the last, we clamp to ends.
+ *  - If 'timestamp' matches exactly, we just return that track entry.
+ *  - Otherwise, we interpolate linearly between the nearest two track entries.
+ *
+ * Example track object shape:
+ *   {
+ *     timestamp: 1738193960,
+ *     coord: [-97.4449, 37.6378],   // [lng, lat]
+ *     alt: 17                      // maybe in thousands of feet?
+ *   }
+ */
+        function getInterpolatedTrack(trackArray, timestamp) {
+            if (!trackArray || !trackArray.length) {
+                return null;
+            }
+
+            // Clamp to first or last if out of range
+            if (timestamp <= trackArray[0].timestamp) {
+                // Could compute heading from first to second if you want a direction
+                // or just assume heading=0 if out-of-bounds
+                const heading = bearingBetweenCoords(trackArray[0].coord, trackArray[1].coord);
+                return { ...trackArray[0], timestamp, heading };
+            }
+            if (timestamp >= trackArray[trackArray.length - 1].timestamp) {
+                const n = trackArray.length;
+                const heading = bearingBetweenCoords(trackArray[n - 2].coord, trackArray[n - 1].coord);
+                return { ...trackArray[n - 1], timestamp, heading };
+            }
+
+            // Exact match
+            const exact = trackArray.find(t => t.timestamp === timestamp);
+            if (exact) {
+                // If you want a heading on exact matches:
+                // we can approximate from the previous + next points
+                const index = trackArray.indexOf(exact);
+                let heading = 0;
+                if (index > 0 && index < trackArray.length - 1) {
+                    heading = bearingBetweenCoords(trackArray[index - 1].coord, trackArray[index].coord);
+                }
+                return { ...exact, heading };
+            }
+
+            // Interpolate between the two bounding times
+            let i = 0;
+            while (i < trackArray.length - 1 && trackArray[i + 1].timestamp < timestamp) {
+                i++;
+            }
+
+            const prev = trackArray[i];
+            const next = trackArray[i + 1];
+
+            // Time ratio
+            const dt = next.timestamp - prev.timestamp;
+            const ratio = (timestamp - prev.timestamp) / dt;
+
+            // Interpolate lat/lon
+            const [lng1, lat1] = prev.coord;
+            const [lng2, lat2] = next.coord;
+            const lng = lng1 + ratio * (lng2 - lng1);
+            const lat = lat1 + ratio * (lat2 - lat1);
+
+            // Interpolate alt if it exists
+            let alt;
+            if (prev.alt != null && next.alt != null) {
+                alt = prev.alt + ratio * (next.alt - prev.alt);
+            }
+
+            // Single heading for the entire segment
+            const heading = bearingBetweenCoords(prev.coord, next.coord);
+
+            // Return your new track object with heading included
+            return {
+                timestamp,
+                coord: [lng, lat],
+                alt,        // optional
+                heading     // degrees from north
+            };
+        }
+
+        function parseGeojsonToTrack(geojson) {
+            if (!geojson.features || !geojson.features.length) {
+                console.warn("No features found in GeoJSON");
+                return [];
+            }
+
+            // We assume there's exactly one Feature for the flight path
+            const feature = geojson.features[0];
+            if (!feature.properties || !feature.properties.timestamps) {
+                console.warn("No timestamps found in feature properties.");
+                return [];
+            }
+
+            const coords = feature.geometry.coordinates;  // array of [lng, lat, alt]
+            const timestamps = feature.properties.timestamps; // array of matching timestamps
+            if (coords.length !== timestamps.length) {
+                console.warn("Coordinates and timestamps mismatch!");
+            }
+
+            // Build an array of { timestamp, coord: [lng, lat], alt }
+            const trackArray = coords.map((pt, i) => {
+                const [lng, lat, alt = 0] = pt;
+                const ts = timestamps[i];
+                return {
+                    timestamp: ts,
+                    coord: [lng, lat],
+                    alt: alt
+                };
+            });
+
+            // Sort by time, just in case
+            trackArray.sort((a, b) => a.timestamp - b.timestamp);
+            return trackArray;
+        }
+
+
+
+
+        const timeSlider = document.getElementById('timeSlider');
+        const playButton = document.getElementById('playButton');
+
+    // Handle play/pause clicks. Also control the audio playback.
+    playButton.addEventListener('click', function () {
+        if (playbackActive) {
+          playButton.textContent = 'Play';
+          playbackActive = false;
+          atcAudio.pause();
+        } else {
+          playButton.textContent = 'Pause';
+          playbackActive = true;
+          // If the slider is at its max, restart from the beginning.
+          if (parseFloat(timeSlider.value) === parseFloat(timeSlider.max)) {
+            timeSlider.value = timeSlider.min;
+          }
+          const interval = setInterval(function () {
+            if (!playbackActive) {
+              clearInterval(interval);
+              return;
+            }
+            // Increment the slider value
+            timeSlider.value = parseFloat(timeSlider.value) + 0.2;
+            if (parseFloat(timeSlider.value) >= parseFloat(timeSlider.max)) {
+              clearInterval(interval);
+              playButton.textContent = 'Play';
+              playbackActive = false;
+              atcAudio.pause();
+            }
+            // Dispatch an input event so all listeners update (including audio syncing)
+            timeSlider.dispatchEvent(new Event('input'));
+          }, 100);
+        }
+      });
+  
+      // Listen for slider input events.
+      timeSlider.addEventListener('input', function (e) {
+        const t = parseFloat(e.target.value);
+  
+        // --- Update the ATC audio position if within the audio segment ---
+        if (t >= audioStart && t <= audioEnd) {
+          // Set audio currentTime relative to the audio start timestamp.
+          const newAudioTime = t - audioStart;
+          // Only update if there is a noticeable difference (optional)
+          if (Math.abs(atcAudio.currentTime - newAudioTime) > 0.1) {
+            atcAudio.currentTime = newAudioTime;
+          }
+          // If playback is active but the audio is paused, start it.
+          if (playbackActive && atcAudio.paused) {
+            atcAudio.play().catch(err => {
+              console.warn("Audio play interrupted:", err);
+            });
+          }
+        } else {
+          // If the slider is outside the audio segment, pause the audio.
+          if (!atcAudio.paused) {
+            atcAudio.pause();
+          }
+        }
+  
+        // --- Update flight models (existing logic) ---
+        for (const flightId in flightsData) {
+          const flightObj = flightsData[flightId];
+          const trackArray = flightObj.track;
+          if (!trackArray || !trackArray.length) {
+            continue;
+          }
+          const interpolated = getInterpolatedTrack(trackArray, t);
+          if (!interpolated) {
+            console.log(`Flight ${flightId} has no valid interpolation at time ${t}.`);
+            continue;
+          }
+          const altitudeInMeters = interpolated.alt * 0.3048;
+          const headingDeg = interpolated.heading || 0;
+          const headingRad = (180 - headingDeg) * Math.PI / 180;
+          const merc = maplibregl.MercatorCoordinate.fromLngLat(
+            interpolated.coord,
+            altitudeInMeters
+          );
+          const scale = merc.meterInMercatorCoordinateUnits() * 20;
+          flightObj.modelTransform.translateX = merc.x;
+          flightObj.modelTransform.translateY = merc.y;
+          flightObj.modelTransform.translateZ = merc.z;
+          flightObj.modelTransform.rotateX = Math.PI / 2;
+          flightObj.modelTransform.rotateY = headingRad;
+          flightObj.modelTransform.rotateZ = 0;
+          flightObj.modelTransform.scale = scale;
+        }
+        map.triggerRepaint();
+      });
+
+
+
+        function addStlModel(flightId, modelUrl, color) {
+            // We'll get the transform from flightsData at runtime
+            const customLayer = {
+                id: flightsData[flightId].layerId,
+                type: 'custom',
+                renderingMode: '3d',
+
+                onAdd(map, gl) {
+                    this.map = map;
+                    this.flightId = flightId; // store so we can look up transforms
+                    this.camera = new THREE.Camera();
+                    this.scene = new THREE.Scene();
+
+                    const ambientLight = new THREE.AmbientLight(0xffffff);
+                    this.scene.add(ambientLight);
+
+                    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x000000, 2);
+                    this.scene.add(hemisphereLight);
+
+                    const loader = new STLLoader();
+                    loader.load(
+                        modelUrl,
+                        stl => {
+                            const material = new THREE.MeshPhongMaterial({
+                                color: color,
+                                specular: 0x111111,
+                                shininess: 0
+                            });
+                            const mesh = new THREE.Mesh(stl, material);
+                            mesh.scale.set(0.02, 0.02, 0.02);
+                            mesh.rotation.x = -Math.PI / 2;
+                            this.scene.add(mesh);
+                        },
+                        undefined,
+                        err => {
+                            console.error("STL load error:", err);
+                        }
+                    );
+
+                    // Use the same canvas/context that MapLibre uses
+                    this.renderer = new THREE.WebGLRenderer({
+                        canvas: map.getCanvas(),
+                        context: gl,
+                        antialias: true
+                    });
+                    this.renderer.autoClear = false;
+                },
+
+                render(gl, matrix) {
+                    // Look up the current transform for this flight
+                    const flightObj = flightsData[this.flightId];
+                    const mt = flightObj.modelTransform; // shorthand
+
+                    // Build rotation matrices
+                    const rotationX = new THREE.Matrix4().makeRotationAxis(
+                        new THREE.Vector3(1, 0, 0), mt.rotateX
+                    );
+                    const rotationY = new THREE.Matrix4().makeRotationAxis(
+                        new THREE.Vector3(0, 1, 0), mt.rotateY
+                    );
+                    const rotationZ = new THREE.Matrix4().makeRotationAxis(
+                        new THREE.Vector3(0, 0, 1), mt.rotateZ
+                    );
+
+                    // Main matrix from MapLibre
+                    const m = new THREE.Matrix4().fromArray(matrix.defaultProjectionData.mainMatrix);
+
+                    // Model matrix: translation, scale, rotate
+                    const l = new THREE.Matrix4()
+                        .makeTranslation(mt.translateX, mt.translateY, mt.translateZ)
+                        .scale(new THREE.Vector3(mt.scale, -mt.scale, mt.scale)) // note sign flip for y
+                        .multiply(rotationX)
+                        .multiply(rotationY)
+                        .multiply(rotationZ);
+
+                    // Combine the two
+                    this.camera.projectionMatrix = m.multiply(l);
+
+                    this.renderer.resetState();
+                    this.renderer.render(this.scene, this.camera);
+
+                    // Continuously re-render
+                    this.map.triggerRepaint();
+                }
+            };
+
+            map.addLayer(customLayer);
+        }
+
+
+        map.on('load', () => {
+
+            map.setSky({
+                "sky-color": "#000000",
+                "sky-horizon-blend": 0.5,
+                "horizon-color": "#222222",
+                "horizon-fog-blend": 0.5,
+                "fog-color": "#444444",
+                "fog-ground-blend": 0.5,
+                "atmosphere-blend": [
+                    "interpolate",
+                    ["linear"],
+                    ["zoom"],
+                    0,
+                    1,
+                    10,
+                    1,
+                    12,
+                    0
+                ]
+            });
+
+            /* // Extruded path example
+                // Helper function to create a polygon from a path, so the path can be rendered with the specified thickness
+            function pathToPolygon(path) {
+                // Convert input path to a LineString GeoJSON feature
+                const line = turf.lineString(path);
+            
+                // Buffer the line by 0.5 miles (approximately 805 meters)
+                const buffered = turf.buffer(line, 0.5, { units: 'miles' });
+                console.log(buffered);
+                // Return the resulting GeoJSON polygon
+                return buffered
+            }
+    
+            const polygon = pathToPolygon([
+                [
+                    -77.05065648172516,
+                    38.88664428814337
+                  ],
+                  [
+                    -77.0404415890932,
+                    38.879167425933645
+                  ],
+                  [
+                    -77.03327591814208,
+                    38.87406371899874
+                  ],
+                  [
+                    -77.02870208562047,
+                    38.86848482938123
+                  ],
+                  [
+                    -77.02443317526638,
+                    38.860649904813556
+                  ],
+                  [
+                    -77.02214625900518,
+                    38.85518868923202
+                  ],
+                  [
+                    -77.02168887575309,
+                    38.852339192876684
+                  ],
+                  [
+                    -77.02153641466933,
+                    38.849608318412606
+                  ],
+                  [
+                    -77.02199379792143,
+                    38.845214952547394
+                  ],
+                  [
+                    -77.02412825309804,
+                    38.83725870768302
+                  ],
+                  [
+                    -77.02687255261134,
+                    38.82775754857954
+                  ],
+                  [
+                    -77.02793978020009,
+                    38.81920542107591
+                  ],
+                  [
+                    -77.02656763044301,
+                    38.81219666197873
+                  ],
+                  [
+                    -77.02550040285509,
+                    38.80245452936583
+                  ]
+            ]);
+            map.addSource('polygon', {
+                'type': 'geojson',
+                'data': polygon
+            });
+            map.addLayer({
+                'id': 'polygon',
+                'type': 'fill-extrusion',
+                'source': 'polygon',
+                'paint': {
+                    'fill-extrusion-color': '#0092ff',
+                    'fill-extrusion-height': 200,
+                    'fill-extrusion-base': 0,
+                    'fill-extrusion-opacity': 0.6
+                }
+            });
+            */
+
+            function addFlight(id, dataUrl, color) {
+                // 1) Add a source/layer to draw the flight path line in 2D
+                map.addSource(id + '-source', {
+                    type: 'geojson',
+                    data: dataUrl
+                });
+
+                map.on('data', function (e) {
+                    if (e.sourceId === id + '-source' && e.sourceDataType === 'metadata') {
+                        // Add a line layer to show the path
+                        map.addLayer({
+                            id: id + '-layer',
+                            type: 'line',
+                            source: id + '-source',
+                            layout: {
+                                'line-join': 'round',
+                                'line-cap': 'round'
+                            },
+                            paint: {
+                                'line-color': color,
+                                'line-width': 4
+                            }
+                        });
+
+                        // 2) Fetch the actual data, parse it, store in flightsData
+                        fetch(dataUrl)
+                            .then(response => response.json())
+                            .then(geojson => {
+                                const flightType = geojson.properties.type;
+                                const tail = geojson.properties.tail;
+                                const flightName = geojson.properties.flight;
+                                console.log(`Flight ${flightName} (${flightType}) with tail #${tail} loaded.`);
+
+                                const trackArray = parseGeojsonToTrack(geojson);
+
+                                // Create an object to store on flightsData
+                                // Start with a dummy transform (we'll update it on slider input)
+                                const modelTransform = {
+                                    translateX: 0,
+                                    translateY: 0,
+                                    translateZ: 0,
+                                    rotateX: 0,
+                                    rotateY: 0,
+                                    rotateZ: 0,
+                                    scale: 1
+                                };
+
+                                // Save everything in a global
+                                flightsData[id] = {
+                                    track: trackArray,
+                                    color: color,
+                                    flightType: flightType,  // e.g. "UH-60"
+                                    modelTransform: modelTransform,
+                                    layerId: id + '-model'   // We'll create a custom layer
+                                };
+
+                                // 3) Actually add the STL model layer for this flight
+                                addStlModel(id, `./assets/${flightType}.stl`, color);
+                            });
+                    }
+                });
+            }
+
+
+            addFlight('AE313D', './assets/AE313D-track.geojson', '#00ff00');
+            addFlight('N709PS', './assets/N709PS-track.geojson', '#ff0000');
+
+
+            // End map.onLoad
+        });
+    </script>
+</body>
+
+</html>
