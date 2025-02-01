@@ -1,8 +1,8 @@
 {
     "type": "FeatureCollection",
     "properties": {
-        "flight": "AE313D",
-        "tail": "unk",
+        "flight": "PAT25",
+        "tail": "AE313D",
         "type": "UH-60"
     },
     "features": [

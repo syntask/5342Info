@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <title>Potomac River Middair Collision Info</title>
   <meta charset='utf-8'>
@@ -22,29 +23,120 @@
       margin: 0;
       padding: 0;
       transform: scale(1);
-    }
-    #map {
-      height: calc(100vh - 80px);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      height: 100svh;
       width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background-color: #222;
     }
-    /* Optional: position the audio player at the bottom */
-    #audioPlayer {
+
+    /* Adjust the map height to allow room for the audio controls */
+    #map {
+      height: 100px;
+      width: 100vw;
+      flex-grow: 1;
+    }
+
+    /* --- Custom Audio Controls --- */
+    #audio-controls {
+      background-color: #222;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 10px;
+      width: 1000px;
+      max-width: 100vw;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+    /* Updated play/pause button */
+    #audio-controls button#play-pause {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: none;
+      background-color: #444;
+      cursor: pointer;
+      margin-right: 10px;
+      border-radius: 999px;
+    }
+
+    /* The inner container for centering the SVGs */
+    #audio-controls button#play-pause>div {
+      position: relative;
       width: 100%;
+      height: 100%;
     }
+
+    /* Center the SVG icons inside the button */
+    #audio-controls button#play-pause>div svg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 18px;
+      height: 18px;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    /* When button has .paused: show play icon at full size, hide pause icon */
+    #audio-controls button#play-pause.paused #play-icon {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    #audio-controls button#play-pause.paused #pause-icon {
+      transform: translate(-50%, -50%) scale(0.5);
+      opacity: 0;
+    }
+
+    /* When not paused: show pause icon at full size, hide play icon */
+    #audio-controls button#play-pause:not(.paused) #play-icon {
+      transform: translate(-50%, -50%) scale(0.5);
+      opacity: 0;
+    }
+
+    #audio-controls button#play-pause:not(.paused) #pause-icon {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    /* --- Range Slider and other controls --- */
+    #audio-controls input[type="range"] {
+      width: 300px;
+      flex-grow: 1;
+      margin: 0 10px;
+      cursor: grab;
+    }
+
+    #audio-controls input[type="range"]:active {
+      cursor: grabbing;
+    }
+
+
+    #current-time,
+    #duration {
+      width: 40px;
+      text-align: center;
+    }
+
     /* --- Marker CSS --- */
-    /* Icon marker container (fixed size so its center aligns with the coordinate) */
     .flight-marker-container {
       width: 16px;
       height: 16px;
     }
+
     .flight-marker-icon {
       width: 16px;
       height: 16px;
       background-size: contain;
       background-repeat: no-repeat;
-      /* The rotation transform is applied directly to the icon element */
     }
-    /* Label marker styles – this element remains upright (viewport alignment) */
+
     .flight-marker-label {
       font-family: sans-serif;
       font-size: 10px;
@@ -56,24 +148,65 @@
       padding: 2px 4px;
       border-radius: 4px;
     }
-    /* Styles for the custom visibility control */
+
+    /* --- Custom Visibility Control CSS --- */
     .custom-visibility-control {
-      background: white;
-      padding: 10px;
+      background: #222;
+      color: #fff;
+      padding: 8px 8px;
       font-family: sans-serif;
       font-size: 12px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-    .custom-visibility-control div {
-      margin-bottom: 4px;
+
+    .maplibregl-ctrl-group {
+      background-color: #222;
+    }
+
+    .maplibregl-ctrl-group button span {
+      filter: invert(1);
     }
   </style>
 </head>
+
 <body>
   <div id="map"></div>
-  <!-- Audio element replaces slider and play button -->
-  <audio id="audioPlayer" src="assets/atc-audio.mp3" preload="auto" controls></audio>
-  
+  <!-- Audio element without default controls -->
+  <audio id="audioPlayer" src="assets/atc-audio.mp3" preload="auto"></audio>
+
+  <!-- Custom audio controls -->
+  <div id="audio-controls">
+    <button id="play-pause" class="paused">
+      <div>
+        <!-- Play Icon SVG -->
+        <svg id="play-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.7472 16.0467">
+          <g>
+            <rect height="16.0467" opacity="0" width="15.7472" x="0" y="0" />
+            <path
+              d="M1.63027 14.7928C1.63027 15.6476 2.13545 16.0339 2.71172 16.0339C2.96533 16.0339 3.22871 15.9544 3.47998 15.8193L14.8569 9.10537C15.504 8.73047 15.7472 8.45362 15.7472 8.01846C15.7472 7.57354 15.504 7.30342 14.8569 6.93154L3.47998 0.214551C3.22871 0.0757813 2.96533 0 2.71172 0C2.13545 0 1.63027 0.389356 1.63027 1.24414Z"
+              fill="white" fill-opacity="0.85" />
+          </g>
+        </svg>
+        <!-- Pause Icon SVG -->
+        <svg id="pause-icon" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 11.6064 15.7928">
+          <g>
+            <rect height="15.7928" opacity="0" width="11.6064" x="0" y="0" />
+            <path
+              d="M1.15352 15.78L3.31953 15.78C4.09043 15.78 4.47305 15.4004 4.47305 14.6197L4.47305 1.15352C4.47305 0.348926 4.09043 0 3.31953 0L1.15352 0C0.382618 0 0 0.375879 0 1.15352L0 14.6197C0 15.4004 0.382618 15.78 1.15352 15.78ZM7.93526 15.78L10.0915 15.78C10.8722 15.78 11.245 15.4004 11.245 14.6197L11.245 1.15352C11.245 0.348926 10.8722 0 10.0915 0L7.93526 0C7.15459 0 6.77198 0.375879 6.77198 1.15352L6.77198 14.6197C6.77198 15.4004 7.15459 15.78 7.93526 15.78Z"
+              fill="white" fill-opacity="0.85" />
+          </g>
+        </svg>
+      </div>
+    </button>
+    <span id="current-time">0:00</span>
+    <input type="range" id="seek-slider" min="0" max="100" value="0" step="0.1">
+    <span id="duration">0:00</span>
+  </div>
+
   <script type="importmap">
     {
       "imports": {
@@ -83,30 +216,74 @@
       }
     }
   </script>
-  
+
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
+    // === Custom Audio Controls Setup ===
+    const audioPlayer = document.getElementById('audioPlayer');
+    const playPauseButton = document.getElementById('play-pause');
+    const seekSlider = document.getElementById('seek-slider');
+    const currentTimeSpan = document.getElementById('current-time');
+    const durationSpan = document.getElementById('duration');
+
+    // When metadata is loaded, update the duration display and slider max.
+    audioPlayer.addEventListener('loadedmetadata', () => {
+      seekSlider.max = audioPlayer.duration;
+      durationSpan.textContent = formatTime(audioPlayer.duration);
+    });
+
+    // Update the slider and current time display as the audio plays.
+    audioPlayer.addEventListener('timeupdate', () => {
+      seekSlider.value = audioPlayer.currentTime;
+      currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
+    });
+
+    // Allow seeking via the slider.
+    seekSlider.addEventListener('input', () => {
+      audioPlayer.currentTime = seekSlider.value;
+    });
+
+    // Toggle play/pause and update button class.
+    playPauseButton.addEventListener('click', () => {
+      if (audioPlayer.paused) {
+        audioPlayer.play();
+        playPauseButton.classList.remove('paused');
+      } else {
+        audioPlayer.pause();
+        playPauseButton.classList.add('paused');
+      }
+    });
+
+    function formatTime(time) {
+      const minutes = Math.floor(time / 60);
+      const seconds = Math.floor(time % 60);
+      return minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+    }
+
+    // === Flight Simulation Code (unchanged) ===
     const flightsData = {};
     var flightFollowing = null;
 
-    // --- Define the audio time segment ---
+    // Define the audio time segment (simulation time offset)
     const audioStart = 1738201610; // simulation time corresponding to audio time 0
-    const audioEnd   = 1738201717;
-    const atcAudio = document.getElementById('audioPlayer');
+    const audioEnd = 1738201717;
 
     // Initialize MapLibre map.
     const map = new maplibregl.Map({
       container: 'map',
       style: 'https://api.maptiler.com/maps/d856b495-1396-447c-80d5-0fd7fca006e0/style.json?key=uxGPO18AyvxUdEGKe02K',
       zoom: 12,
-      center: [-77.024841,38.84221],
+      center: [-77.024841, 38.84221],
       pitch: 0,
       maxPitch: 88,
       canvasContextAttributes: { antialias: true }
     });
+
+    // Collapse the attribution control on load
+    document.querySelector('.maplibregl-ctrl-attrib').classList.remove('maplibregl-compact-show');
 
     function bearingBetweenCoords([lng1, lat1], [lng2, lat2]) {
       const toRad = deg => deg * Math.PI / 180;
@@ -114,7 +291,7 @@
       const λ1 = toRad(lng1), λ2 = toRad(lng2);
       const y = Math.sin(λ2 - λ1) * Math.cos(φ2);
       const x = Math.cos(φ1) * Math.sin(φ2) -
-                Math.sin(φ1) * Math.cos(φ2) * Math.cos(λ2 - λ1);
+        Math.sin(φ1) * Math.cos(φ2) * Math.cos(λ2 - λ1);
       let brng = Math.atan2(y, x) * 180 / Math.PI;
       return (brng + 360) % 360;
     }
@@ -253,15 +430,16 @@
       map.triggerRepaint();
     }
 
-    atcAudio.addEventListener('timeupdate', () => {
-      const simTime = atcAudio.currentTime + audioStart;
+    // Instead of using the original 'atcAudio', we now use our custom-controlled audioPlayer.
+    audioPlayer.addEventListener('timeupdate', () => {
+      const simTime = audioPlayer.currentTime + audioStart;
       updateFlightPositions(simTime);
     });
 
     function animate() {
       requestAnimationFrame(animate);
-      if (!atcAudio.paused) {
-        const simTime = atcAudio.currentTime + audioStart;
+      if (!audioPlayer.paused) {
+        const simTime = audioPlayer.currentTime + audioStart;
         updateFlightPositions(simTime);
       }
     }
@@ -462,14 +640,14 @@
                 flightsData[id].iconMarker = iconMarker;
                 flightsData[id].iconElement = iconElement;
 
-                // Create the label marker (separate from the icon).
+                // Create the label marker.
                 const labelElement = document.createElement('div');
                 labelElement.className = 'flight-marker-label';
                 labelElement.innerText = `${flightName} / ${tail} @ 0 m`;
                 const labelMarker = new maplibregl.Marker({
                   element: labelElement,
                   rotationAlignment: 'viewport',
-                  anchor: 'top-left', // This sets the origin of the marker element to its top-left corner.
+                  anchor: 'top-left',
                   offset: [20, 0]
                 })
                   .setLngLat(initialCoord)
@@ -478,7 +656,7 @@
                 flightsData[id].labelElement = labelElement;
 
                 addStlModel(id, modelUrl, color);
-                
+
                 // Set initial flight locations
                 updateFlightPositions(audioStart);
               });
@@ -487,9 +665,12 @@
       }
 
       // Add your flights.
-      addFlight('AE313D', './assets/AE313D-track.geojson', '#00ff00', './assets/UH-60.stl', 1/1200);
-      addFlight('N709PS', './assets/N709PS-track.geojson', '#ff0000', './assets/CRJ7.stl', 1/300);
+      addFlight('AE313D', './assets/AE313D-track.geojson', '#ff453a', './assets/UH-60.stl', 1 / 1200);
+      addFlight('N709PS', './assets/N709PS-track.geojson', '#0a84ff', './assets/CRJ7.stl', 1 / 300);
+      addFlight('N765US', './assets/N765US-track.geojson', '#30d158', './assets/CRJ7.stl', 1 / 300);
+      addFlight('N941NN', './assets/N941NN-track.geojson', '#bf5af2', './assets/CRJ7.stl', 1 / 300);
     });
   </script>
 </body>
+
 </html>
