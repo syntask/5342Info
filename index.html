@@ -34,12 +34,12 @@
     /* --- Marker CSS --- */
     /* Icon marker container (fixed size so its center aligns with the coordinate) */
     .flight-marker-container {
-      width: 30px;
-      height: 30px;
+      width: 16px;
+      height: 16px;
     }
     .flight-marker-icon {
-      width: 30px;
-      height: 30px;
+      width: 16px;
+      height: 16px;
       background-size: contain;
       background-repeat: no-repeat;
       /* The rotation transform is applied directly to the icon element */
@@ -101,9 +101,9 @@
     const map = new maplibregl.Map({
       container: 'map',
       style: 'https://api.maptiler.com/maps/d856b495-1396-447c-80d5-0fd7fca006e0/style.json?key=uxGPO18AyvxUdEGKe02K',
-      zoom: 16,
-      center: [-77.02168887575309, 38.852339192876684],
-      pitch: 60,
+      zoom: 12,
+      center: [-77.024841,38.84221],
+      pitch: 0,
       maxPitch: 88,
       canvasContextAttributes: { antialias: true }
     });
@@ -419,7 +419,7 @@
               type: 'line',
               source: id + '-source',
               layout: { 'line-join': 'round', 'line-cap': 'round' },
-              paint: { 'line-color': color, 'line-width': 4 }
+              paint: { 'line-color': color, 'line-width': 2 }
             });
             fetch(dataUrl)
               .then(response => response.json())
@@ -478,6 +478,9 @@
                 flightsData[id].labelElement = labelElement;
 
                 addStlModel(id, modelUrl, color);
+                
+                // Set initial flight locations
+                updateFlightPositions(audioStart);
               });
           }
         });
