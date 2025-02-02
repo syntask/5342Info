@@ -65,6 +65,15 @@
       border-radius: 999px;
     }
 
+    #play-pause {
+      transform: scale(1);
+      transition: transform 0.1s;
+    }
+
+    #play-pause:active {
+      transform: scale(0.9);
+    }
+
     /* The inner container for centering the SVGs */
     #audio-controls button#play-pause>div {
       position: relative;
@@ -111,15 +120,33 @@
       flex-grow: 1;
       margin: 0 10px;
       cursor: grab;
+      appearance: none;
+      -moz-appearance: none;
+      -webkit-appearance: none;
+      background-color: #444;
+      height: 4px;
+      border-radius: 2px;
     }
 
     #audio-controls input[type="range"]:active {
       cursor: grabbing;
     }
 
+    select {
+      appearance: none;
+      -moz-appearance: none;
+      -webkit-appearance: none;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      outline: none;
+    }
 
-    #current-time,
-    #duration {
+
+    #current-time, #duration {
       width: 40px;
       text-align: center;
     }
@@ -170,6 +197,53 @@
     .maplibregl-ctrl-group button span {
       filter: invert(1);
     }
+
+    #subtitle-container {
+      position: fixed;
+      bottom: 70px;
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    #subtitles {
+      background-color: #00000077;
+      color: #eee;
+      padding: 1em;
+      width: max-content;
+      max-width: 80%;
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      transform: scale(0.8);
+      filter: blur(8px);
+      transition: opacity 0.35s, transform 0.35s, filter 0.35s;
+      font-size: .9rem;
+    }
+
+    #subtitles.visible {
+      opacity: 1;
+      transform: scale(1);
+      filter: blur(0);
+    }
+
+    #subtitle-heading {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+
+    .KDCA.Tower {
+      color: #ffe600;
+    }
   </style>
 </head>
 
@@ -177,6 +251,13 @@
   <div id="map"></div>
   <!-- Audio element without default controls -->
   <audio id="audioPlayer" src="assets/atc-audio.mp3" preload="auto"></audio>
+
+  <div id="subtitle-container">
+    <div id="subtitles">
+      <span id="subtitle-heading">KDCA Tower</span>
+      <span id="subtitle-body">Potomac Approach, American 313D, 2 miles from the DCA VOR, maintain 3000 until established on the localizer, cleared ILS runway 19 approach.</span>
+    </div>
+  </div>
 
   <!-- Custom audio controls -->
   <div id="audio-controls">
@@ -270,6 +351,7 @@
     // Define the audio time segment (simulation time offset)
     const audioStart = 1738201610; // simulation time corresponding to audio time 0
     const audioEnd = 1738201717;
+    var simTime = audioStart;
 
     // Initialize MapLibre map.
     const map = new maplibregl.Map({
@@ -386,7 +468,7 @@
             const lookbeyond = interpolated.alt * 5.67;
             const bearing = interpolated.heading;
             const pitch = 80;
-            const zoom = 22.4 - Math.log2(interpolated.alt);
+            const zoom = 23.4 - Math.log2(interpolated.alt);
             const lookAheadPoint = turf.destination(
               turf.point(interpolated.coord),
               lookbeyond,
@@ -434,13 +516,88 @@
     audioPlayer.addEventListener('timeupdate', () => {
       const simTime = audioPlayer.currentTime + audioStart;
       updateFlightPositions(simTime);
+      updateSubtitles(simTime);
     });
+
+    const subtitlesObj = document.getElementById('subtitles');
+    const subtitles = [
+      { time: 0, heading: '', body: ''},
+      { time: 20, heading: 'KDCA Tower', body: 'Jazz 789 contact Potomac departure, good day' },
+      { time: 22, heading: 'Jazz 789', body: 'Have a good day' },
+      { time: 23, heading: 'KDCA Tower', body: 'American 3130, slow to final'},
+      { time: 25, heading: 'AAL3130', body: 'Slowing, American 3130'},
+      { time: 26.5, heading: 'KDCA Tower', body: 'PAT25, traffic just south of the Woodrow Bridge, a CRJ, at 1200 feet setting up for runway 33'},
+      { time: 33, heading: 'PAT25', body: 'PAT25 has the traffic in sight, request visual separation'},
+      { time: 35.5, heading: 'KDCA Tower', body: 'Visual separation approved'},
+      { time: 36.5, heading: 'KDCA Tower', body: 'American 1630, Tower, runway 1, line up and wait. Traffic\'s 2 out for runway 33, there\'s traffic on 6 mile final'},
+      { time: 42, heading: 'AAL1630', body: 'Line up and wait runway 1, American 1630'},
+      { time: 47, heading: 'KDCA Tower', body: 'Bluestreak 5307, keep rolling out to N, Ground .7, good day.'},
+      { time: 50, heading: 'JIA5307', body: 'Bluestreak 5307'},
+      { time: 54, heading: 'KDCA Tower', body: 'American 1630, winds are 320 at 14 gust 25. Traffic\'s 2 mile left base for runway 33. No delay, runway 1, cleared for immediate takeoff.'},
+      { time: 61.5, heading: 'AAL1630', body: 'Number 1, cleared for takeoff, American 1630.'},
+      { time: 68, heading: 'KDCA Tower', body: '[CONFLICT ALERT WARNING]'},
+      { time: 69.5, heading: 'KDCA Tower', body: 'PAT25, do you have the CRJ in sight?'},
+      { time: 72.5, heading: 'KDCA Tower', body: 'PAT25 pass behind the CRJ'},
+      { time: 74.5, heading: 'PAT25', body: 'PAT25 has the aircraft in sight, request visual separation.'},
+      { time: 78, heading: 'KDCA Tower', body: 'Vis sep approved.'},
+      { time: 82, heading: 'AAL472', body: 'American 472 by BADDN on the visual.'},
+      { time: 85, heading: 'KDCA Tower', body: 'American 472, Washington Tower, winds are 320 at 17---'},
+      { time: 87.5, heading: 'KDCA Tower', body: '[OOOOH!! Oh my---]'},
+      { time: 92, heading: 'AAL472', body: 'Oh, they just went.'},
+      { time: 97, heading: 'AAL3130', body: 'Tower, did you see that?'},
+      { time: 98, heading: 'KDCA Tower', body: 'American 472-- American 3130, go around, turn left heading 250, climb and maintain 3000\'.'},
+      { time: 103.5, heading: 'AAL3130', body: 'Turn left heading 350, 3000\', Ameican 3130'},
+      { time: 109, heading: 'JIA5347', body: 'Tower, Bluestreak 5347 is on final, request uh runway 33 - circle to 33.'},
+      { time: 117, heading: 'AAL3130', body: 'Say again heading for American 3130'},
+      { time: 119, heading: 'KDCA Tower', body: 'American 3130, go around, turn left heading 270, climb and maintain 3000\'.'},
+      { time: 123, heading: 'AAL3130', body: '270 on the heading, 3000\', American 3130'},
+      ];
+
+    // add starttime to subtitles time values
+    subtitles.forEach(subtitle => subtitle.time += audioStart - 19);
+
+    function updateSubtitles(timestamp){
+      const subtitle = subtitles.reduce((prev, curr) => (curr.time <= timestamp && curr.time > prev.time ? curr : prev), { time: 0 });
+      if (subtitle.time > 0) {
+
+        var subtitleBodyFormatted = subtitle.body;
+
+        // See if the subtitle body contains any of the flightNames in the flightsData object.
+        for (const flightId in flightsData) {
+          const flightObj = flightsData[flightId];
+          const flightNameFormatted = flightObj.flightName.replace('AAL', 'American ').replace('JIA', 'Bluestreak ');
+          if (subtitle.body.includes(flightNameFormatted)) {
+            subtitleBodyFormatted = subtitle.body.replace(flightNameFormatted, `<span class="${flightObj.flightName}">${flightNameFormatted}</span>`);
+          }
+        }
+
+        const headingHTML = '<span class="'+subtitle.heading+'">'+subtitle.heading+'</span>';
+
+        if (subtitlesObj.querySelector('#subtitle-body').innerHTML === subtitleBodyFormatted) {
+          return;
+        }
+
+        subtitlesObj.querySelector('#subtitle-heading').innerHTML = headingHTML;
+        subtitlesObj.querySelector('#subtitle-body').innerHTML = subtitleBodyFormatted
+
+        // Set the length of time to show the subtitles based on the length of the subtitle text.
+        const duration = Math.max(1000, subtitlesObj.querySelector('#subtitle-body').innerText.length * 100);
+
+        subtitlesObj.classList.add('visible');
+        clearTimeout(subtitlesObj.timer);
+        subtitlesObj.timer = setTimeout(() => {
+          subtitlesObj.classList.remove('visible');
+        }, duration);
+
+      }
+    }
 
     function animate() {
       requestAnimationFrame(animate);
       if (!audioPlayer.paused) {
         const simTime = audioPlayer.currentTime + audioStart;
         updateFlightPositions(simTime);
+        updateSubtitles(simTime);
       }
     }
     animate();
@@ -515,9 +672,17 @@
         this._container = document.createElement('div');
         this._container.className = 'maplibregl-ctrl custom-visibility-control';
         this._container.innerHTML = `
+          <div><span class="options-title">Display Options</span></div>
           <div><input type="checkbox" id="toggle2d" checked> <label for="toggle2d">2D Aircraft</label></div>
           <div><input type="checkbox" id="toggle3d" checked> <label for="toggle3d">3D Aircraft</label></div>
           <div><input type="checkbox" id="toggleTracks" checked> <label for="toggleTracks">Track Logs</label></div>
+          <div style="display: flex; flex-direction: column;"><label for="cameraPosition">Camera Position:</label>
+          <select id="cameraPosition">
+            <option value="default">Overhead View</option>
+            <option value="tower">KDCA Control Tower</option>
+            <option value="collision">Collision Location</option>
+          </select>
+          </div>
         `;
         this._container.querySelector('#toggle2d').addEventListener('change', (e) => {
           toggle2d(e.target.checked);
@@ -563,8 +728,46 @@
       }
     }
 
-    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    
     map.addControl(new VisibilityControl(), 'top-right');
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+    const cameraPosition = document.getElementById('cameraPosition');
+    cameraPosition.addEventListener('change', (e) => {
+      // Check if the selected value is a valid flight ID.
+      const flightId = e.target.value;
+      if (flightsData[flightId]) {
+        flightFollowing = flightId;
+        updateFlightPositions(simTime);
+      } else {
+        flightFollowing = null;
+        if (e.target.value ==='tower') {
+          flightFollowing = null;
+          map.flyTo({
+            center: [-77.0395745296994,38.8520164066407],
+            zoom: 16.747139236424818,
+            pitch: 82.4710661910424,
+            bearing: 128.7129888402858
+          });
+        }
+        if (e.target.value === 'collision') {
+          map.flyTo({
+            center: [-77.02300585244876,38.8420350717096],
+            zoom: 16.487554696848527,
+            pitch: 83.4795460372746,
+            bearing: 108.73769153646504
+          });
+        }
+        if (e.target.value === 'default') {
+          map.flyTo({
+            center: [-77.024841, 38.84221],
+            zoom: 12,
+            pitch: 0,
+            bearing: 0
+          });
+        }
+      }
+    });
 
     map.on('load', () => {
       map.setSky({
@@ -605,6 +808,9 @@
                 const flightType = geojson.properties.type;
                 const tail = geojson.properties.tail;
                 const flightName = geojson.properties.flight;
+                // Add a CSS class for this flightName to the stylesheet
+                document.styleSheets[0].insertRule(`.${flightName} { color: ${color}; font-weight: bold; }`);
+
                 console.log(`Flight ${flightName} (${flightType}) with tail #${tail} loaded.`);
                 const trackArray = parseGeojsonToTrack(geojson);
                 const modelTransform = {
@@ -657,6 +863,12 @@
 
                 addStlModel(id, modelUrl, color);
 
+                const cameraPosition = document.getElementById('cameraPosition');
+                const option = document.createElement('option');
+                option.value = id;
+                option.innerText = `Follow ${flightName}`;
+                cameraPosition.appendChild(option);
+
                 // Set initial flight locations
                 updateFlightPositions(audioStart);
               });
@@ -669,6 +881,11 @@
       addFlight('N709PS', './assets/N709PS-track.geojson', '#0a84ff', './assets/CRJ7.stl', 1 / 300);
       addFlight('N765US', './assets/N765US-track.geojson', '#30d158', './assets/CRJ7.stl', 1 / 300);
       addFlight('N941NN', './assets/N941NN-track.geojson', '#bf5af2', './assets/CRJ7.stl', 1 / 300);
+
+      const interval = setInterval(() => {
+        // Console.log the current camera position, bearing, pitch, and zoom.
+        console.log(map.getCenter(), map.getBearing(), map.getPitch(), map.getZoom());
+      }, 5000);
     });
   </script>
 </body>
