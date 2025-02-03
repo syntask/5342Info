@@ -1,0 +1,262 @@
+[
+    {
+        "time": 0,
+        "heading": "KDCA Tower",
+        "body": "Jazz 789, winds are 320 at 15 gust 25, traffic 2 miles, no delay, runway 1 cleared for takeoff"
+    },
+    {
+        "time": 6,
+        "heading": "Jazz 789",
+        "body": "Clear for takeoff runway 1, no delay Jazz 789."
+    },
+    {
+        "time": 19,
+        "heading": "AAL3130",
+        "body": "Washington Tower American 3130 with you runway 1."
+    },
+    {
+        "time": 22,
+        "heading": "KDCA Tower",
+        "body": "American 3130 Washington tower, winds are 310 at 14 gust 25 runway 1 clear to land. Traffic for depart-- may depart prior to arrival."
+    },
+    {
+        "time": 31.5,
+        "heading": "AAL3130",
+        "body": "Okay clear to land runway 1, American 3130."
+    },
+    {
+        "time": 54,
+        "heading": "KDCA Tower",
+        "body": "Jazz 789 contact Potomac departure, good day"
+    },
+    {
+        "time": 56,
+        "heading": "Jazz 789",
+        "body": "Have a good day"
+    },
+    {
+        "time": 57,
+        "heading": "KDCA Tower",
+        "body": "American 3130, slow to final"
+    },
+    {
+        "time": 59,
+        "heading": "AAL3130",
+        "body": "Slowing, American 3130"
+    },
+    {
+        "time": 60.5,
+        "heading": "KDCA Tower",
+        "body": "PAT25, traffic just south of the Woodrow Bridge, a CRJ, at 1200 feet setting up for runway 33"
+    },
+    {
+        "time": 67,
+        "heading": "PAT25",
+        "body": "PAT25 has the traffic in sight, request visual separation"
+    },
+    {
+        "time": 69.5,
+        "heading": "KDCA Tower",
+        "body": "Visual separation approved"
+    },
+    {
+        "time": 70.5,
+        "heading": "KDCA Tower",
+        "body": "American 1630, Tower, runway 1, line up and wait. Traffic's 2 out for runway 33, there's traffic on 6 mile final"
+    },
+    {
+        "time": 76,
+        "heading": "AAL1630",
+        "body": "Line up and wait runway 1, American 1630"
+    },
+    {
+        "time": 81,
+        "heading": "AAL472",
+        "body": "American 472 by KATRN, runway 1."
+    },
+    {
+        "time": 88.75,
+        "heading": "KDCA Tower",
+        "body": "Bluestreak 5307, keep rolling out to N, Ground .7, good day."
+    },
+    {
+        "time": 92.5,
+        "heading": "JIA5307",
+        "body": "Bluestreak 5307"
+    },
+    {
+        "time": 107,
+        "heading": "KDCA Tower",
+        "body": "American 1630, winds are 320 at 14 gust 25. Traffic's 2 mile left base for runway 33. No delay, runway 1, cleared for immediate takeoff."
+    },
+    {
+        "time": 114.5,
+        "heading": "AAL1630",
+        "body": "Number 1, cleared for takeoff, American 1630."
+    },
+    {
+        "time": 132.5,
+        "heading": "AAL472",
+        "body": "American 472 now part of the visual runway 1."
+    },
+    {
+        "time": 156.75,
+        "heading": "KDCA Tower",
+        "body": "[CONFLICT ALERT WARNING]"
+    },
+    {
+        "time": 157.5,
+        "heading": "KDCA Tower",
+        "body": "PAT25, do you have the CRJ in sight?"
+    },
+    {
+        "time": 160.5,
+        "heading": "KDCA Tower",
+        "body": "PAT25 pass behind the CRJ"
+    },
+    {
+        "time": 163,
+        "heading": "PAT25",
+        "body": "PAT25 has the aircraft in sight, request visual separation."
+    },
+    {
+        "time": 166,
+        "heading": "KDCA Tower",
+        "body": "Vis sep approved."
+    },
+    {
+        "time": 173.5,
+        "heading": "AAL472",
+        "body": "American 472 by BADDN on the visual."
+    },
+    {
+        "time": 176.5,
+        "heading": "KDCA Tower",
+        "body": "American 472, Washington Tower, winds are 320 at 17---"
+    },
+    {
+        "time": 179,
+        "heading": "KDCA Tower",
+        "body": "[OOOOH!! Oh my---]"
+    },
+    {
+        "time": 183,
+        "heading": "AAL472",
+        "body": "Oh, they just went."
+    },
+    {
+        "time": 195,
+        "heading": "AAL3130",
+        "body": "Tower, did you see that?"
+    },
+    {
+        "time": 196,
+        "heading": "KDCA Tower",
+        "body": "American 472---"
+    },
+    {
+        "time": 197,
+        "heading": "KDCA Tower",
+        "body": "American 3130, go around, turn left heading 250, climb and maintain 3000'."
+    },
+    {
+        "time": 201.5,
+        "heading": "AAL3130",
+        "body": "Turn left heading 350, 3000', American 3130"
+    },
+    {
+        "time": 207,
+        "heading": "JIA5347",
+        "body": "Tower, Bluestreak 5347 is on final, request uh runway 33 - circle to 33."
+    },
+    {
+        "time": 214.5,
+        "heading": "AAL3130",
+        "body": "Say again heading for American 3130"
+    },
+    {
+        "time": 217,
+        "heading": "KDCA Tower",
+        "body": "American 3130, go around, turn left heading 270, climb and maintain 3000'."
+    },
+    {
+        "time": 221,
+        "heading": "AAL3130",
+        "body": "270 on the heading, 3000', American 3130"
+    },
+    {
+        "time": 224.5,
+        "heading": "AAL472",
+        "body": "How about American 472?"
+    },
+    {
+        "time": 227.5,
+        "heading": "KDCA Tower",
+        "body": "American 472, cancel landing clearance runway 1, continue."
+    },
+    {
+        "time": 232,
+        "heading": "AAL472",
+        "body": "Continuing, clearance cancelled."
+    },
+    {
+        "time": 247,
+        "heading": "AAL1380",
+        "body": "American 1380 going to departure."
+    },
+    {
+        "time": 249,
+        "heading": "KDCA Tower",
+        "body": "Potomac contact 118.95"
+    },
+    {
+        "time": 251.5,
+        "heading": "AAL1380",
+        "body": "Switching .95 for---"
+    },
+    {
+        "time": 256,
+        "heading": "KDCA Tower",
+        "body": "American 472, cancel approach clearance runway 1, continue."
+    },
+    {
+        "time": 260.5,
+        "heading": "AAL472",
+        "body": "Approach clearance cancelled, we're continuing."
+    },
+    {
+        "time": 265.5,
+        "heading": "JIA5305",
+        "body": "Bluestreak 5305, I'm assuming you saw that as we were flying out?"
+    },
+    {
+        "time": 268.5,
+        "heading": "KDCA Tower",
+        "body": "Affirmative."
+    },
+    {
+        "time": 271,
+        "heading": "AAL472",
+        "body": "Clarify what you want 472 to do, are we going around or are we continuing?"
+    },
+    {
+        "time": 274.5,
+        "heading": "KDCA Tower",
+        "body": "---climb maintain 3000'"
+    },
+    {
+        "time": 277.5,
+        "heading": "AAL472",
+        "body": "American 472's going around, we're gonna climb maintain 3000'"
+    },
+    {
+        "time": 283,
+        "heading": "JIA5347",
+        "body": "Tower, Bluestreak 5347 is on final."
+    },
+    {
+        "time": 297,
+        "heading": "AAL472",
+        "body": "Alright, for American 472 we're on the go we're---"
+    }
+]

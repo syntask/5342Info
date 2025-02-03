@@ -1,0 +1,101 @@
+
+.toggle-switch {
+    height: 1.5em;
+    --track-base-color: #ccc;
+    --track-active-color: #34c759;
+    --handle-color: #FFF;
+    --handle-shadow-color: rgba(0, 0, 0, 0.24);
+    aspect-ratio: 1.75;
+    display: inline-block;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.toggle-switch.dark{
+    --track-base-color: #333;
+    --track-active-color: #34c759;
+    --handle-color: #FFF;
+    --handle-shadow-color: rgba(0, 0, 0, 0.24);
+}
+
+.toggle-switch.light{
+    --track-base-color: #ccc;
+    --track-active-color: #34c759;
+    --handle-color: #FFF;
+    --handle-shadow-color: rgba(0, 0, 0, 0.24);
+}
+
+/* Underlying checkbox element (hidden) */
+.toggle-switch input {
+    display: none;
+}
+
+/* Overall background/container */
+.toggle-switch i {
+    position: relative;
+    display: inline-block;
+    margin-right: 0;
+    aspect-ratio: 1.75;
+    height: 100%;
+    background-color: var(--track-base-color);
+    border-radius: 999px;
+    vertical-align: text-bottom;
+    transition: all .4s ease;
+}
+
+/* Slider track when OFF */
+.toggle-switch i::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 89.5%;
+    height: 85%;
+    background-color: var(--track-base-color);
+    opacity: 1;
+    border-radius: 999px;
+    transform: translate3d(7.5%, 7.5%, 0) scale3d(1, 1, 1);
+    transition: all .4s ease-out;
+}
+
+/* Slider handle */
+.toggle-switch i::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    height: 87%;
+    width: 48.5%;
+    background-color: var(--handle-color);
+    border-radius: 999px;
+    box-shadow: 0 1.5px 1.5px var(--handle-shadow-color);
+    transform: translate3d(7.5%, 7.5%, 0);
+    transform-style: preserve-3d;
+    transition: all 0.4s cubic-bezier(.09, .5, 0, 1.2);
+}
+
+/* Slider handle when pressing */
+.toggle-switch:active i::after {
+    width: 60%;
+    transform: translate3d(7.5%, 7.5%, 0);
+    transition: all 0.2s ease;
+}
+
+/* Slider handle when ON AND pressing */
+.toggle-switch:active input:checked+i::after {
+    transform: translate3d(60%, 7.5%, 0);
+}
+
+/* Overall background/container when ON */
+.toggle-switch input:checked+i {
+    background-color: var(--track-active-color);
+}
+
+/* Slider track when ON */
+.toggle-switch input:checked+i::before {
+    opacity: 1;
+    transform: translate3d(40%, 7.5%, 0) scale3d(0, 0, 0);
+}
+
+/* Slider handle when ON */
+.toggle-switch input:checked+i::after {
+    transform: translate3d(98.5%, 7.5%, 0);
+}

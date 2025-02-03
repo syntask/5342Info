@@ -1,0 +1,471 @@
+body {
+    margin: 0;
+    padding: 0;
+    transform: scale(1);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    height: 100svh;
+    width: 100vw;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #222;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    cursor: default;
+  }
+
+  a {
+    color: #409edd;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  a:visited {
+    color: #409edd;
+  }
+
+  /* Adjust the map height to allow room for the audio controls */
+  #main {
+    flex-grow: 1;
+    min-height: 0; /* Allow children to shrink instead of growing */
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    align-items: flex-end;
+  }
+  
+  #sidebar {
+    background-color: #00000077;
+    backdrop-filter: blur(20px);
+    color: #fff;
+    font-size: .9em;
+    border-right: 1px solid #333;
+    padding: 20px;
+    width: 300px;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    overflow-y: auto; /* Scroll when content is too tall */
+    animation: addSidebar 0.35s forwards;
+  }
+
+  /* For WebKit browsers (Chrome, Safari, Edge) */
+  #sidebar::-webkit-scrollbar {
+    width: 4px; /* width of the vertical scrollbar */
+  }
+
+  #sidebar::-webkit-scrollbar-track {
+    background: transparent; /* dark track color */
+    border-radius: 999px;
+  }
+
+  #sidebar::-webkit-scrollbar-thumb {
+    background-color: #555; /* dark thumb color */
+    border-radius: 999px;
+  }
+
+  /* For Firefox */
+  #sidebar {
+    scrollbar-width: thin; /* "auto" or "thin" */
+    scrollbar-color: #555 #333; /* thumb color and track color */
+  }
+
+  /* Internet Explorer (IE10 and IE11) and older Edge versions */
+  #sidebar {
+    scrollbar-face-color: #555;      /* Color of the draggable scrollbar “thumb” */
+    scrollbar-track-color: #333;       /* Color of the track the thumb slides within */
+    scrollbar-arrow-color: #555;       /* Color of any arrow buttons, if present */
+    scrollbar-highlight-color: #333;   /* Color for highlights (rarely used) */
+    /* Other IE-specific properties include scrollbar-shadow-color and scrollbar-3dlight-color,
+      but their effects are minimal and depend on system settings. */
+  }
+
+
+  
+
+  #sidebar-container{
+    width: auto;
+    height: 100%;
+    z-index: 1;
+    transform: translateX(0%);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    transition: transform 0.35s;
+  }
+
+
+  #sidebar-container.collapsed {
+    transform: translateX(calc(20px - 100%));
+  }
+
+  #sidebar-container.collapsed #sidebar {
+    animation: removeSidebar 0.35s forwards;
+  }
+
+  @keyframes removeSidebar {
+    0% {
+      display: flex;
+    }
+    90% {
+      display: flex;
+    }
+    100% {
+      display: none;
+    }
+  }
+
+  @keyframes addSidebar {
+    0% {
+      display: flex;
+    }
+    10% {
+      display: flex;
+    }
+    100% {
+      display: flex;
+    }
+  }
+
+  #sidebar-container.collapsed #toggle-sidebar svg{
+    transform: rotate(180deg);
+  }
+
+  #toggle-sidebar {
+    background-color: #00000077;
+    backdrop-filter: blur(20px);
+    color: #fff;
+    padding: 0px;
+    cursor: pointer;
+    width: 20px;
+    height: 48px;
+    display: flex;
+    border-radius: 0 4px 4px 0;
+  }
+
+  #map {
+    height: 100%;
+    width: 100%;
+    flex-grow: 1;
+    position: absolute;
+  }
+
+  /* --- Custom Audio Controls --- */
+
+  #audio-controls-wrapper {
+    width: 100%;
+    background-color: #222;
+    border-top: 1px solid #333;
+  }
+
+  #audio-controls {
+    background-color: #222;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 10px;
+    width: 1000px;
+    max-width: 100vw;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  /* Updated play/pause button */
+  #audio-controls button#play-pause {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    border: none;
+    background-color: #444;
+    cursor: pointer;
+    margin-right: 10px;
+    border-radius: 999px;
+  }
+
+  #play-pause {
+    transform: scale(1);
+    transition: transform 0.1s;
+  }
+
+  #play-pause:active {
+    transform: scale(0.9);
+  }
+
+  /* The inner container for centering the SVGs */
+  #audio-controls button#play-pause>div {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Center the SVG icons inside the button */
+  #audio-controls button#play-pause>div svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  /* When button has .paused: show play icon at full size, hide pause icon */
+  #audio-controls button#play-pause.paused #play-icon {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+
+  #audio-controls button#play-pause.paused #pause-icon {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+
+  /* When not paused: show pause icon at full size, hide play icon */
+  #audio-controls button#play-pause:not(.paused) #play-icon {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+
+  #audio-controls button#play-pause:not(.paused) #pause-icon {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+
+  /* --- Range Slider and other controls --- */
+  #audio-controls input[type="range"] {
+    width: 300px;
+    flex-grow: 1;
+    margin: 0 10px;
+    cursor: grab;
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    background-color: #444;
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  #audio-controls input[type="range"]:active {
+    cursor: grabbing;
+  }
+
+  select {
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+    font-size: 1em;
+    overflow: hidden;
+    margin-left: 4px;
+    width: 100%;
+  }
+
+  .option-span {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+
+  .option-seperator {
+    width: 100%;
+    height: 1px;
+    min-height: 1px;
+    background-color: #444;
+    margin-top: 0px;
+    margin-bottom: 0px;
+  }
+
+  .options-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+
+  .title {
+    font-size: 1.8em;
+    font-weight: bold;
+    margin: 0px;
+  }
+
+  .subheading {
+    font-size: 1em;
+    margin: 0px;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2em;
+  }
+
+  #about-section {
+    height: max-content;
+    min-height: max-content;
+    max-height: max-content;
+  }
+
+  #about-section.collapsed {
+    overflow: hidden;
+    height: 7.2em;
+    min-height: 7.2em;
+    max-height: 7.2em;
+  }
+
+  #about-section-collapse {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: .9em;
+    margin-top: 2px;
+  }
+
+  .title-img {
+    height: 1.5em;
+    width: 1.5em;
+    margin-right: 4px;
+  }
+
+  .flex-row-lalign {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .clear-10{
+    height: 10px;
+    min-height: 10px;
+  }
+
+  .clear-20 {
+    height: 20px;
+    min-height: 20px;
+  }
+
+  .clear-40 {
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .clear-flex-grow {
+    flex-grow: 1;
+  }
+
+
+  #current-time, #duration {
+    width: 40px;
+    text-align: center;
+  }
+
+  /* --- Marker CSS --- */
+  .flight-marker-container {
+    width: 16px;
+    height: 16px;
+  }
+
+  .flight-marker-icon {
+    width: 16px;
+    height: 16px;
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+
+  .flight-marker-label {
+    font-family: sans-serif;
+    font-size: 10px;
+    color: #ffffff;
+    white-space: nowrap;
+    transform-origin: top left;
+    background-color: #00000044;
+    backdrop-filter: blur(10px);
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+
+  /* --- Custom Visibility Control CSS --- */
+  .custom-visibility-control {
+    background: #222;
+    color: #fff;
+    padding: 8px 8px;
+    font-family: sans-serif;
+    font-size: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .maplibregl-ctrl-group {
+    background-color: #222;
+  }
+
+  .maplibregl-ctrl-group button span {
+    filter: invert(1);
+  }
+
+  .maplibregl-ctrl-group button + button {
+    border-top-color: #444;
+  }
+
+  #subtitle-container {
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    flex-shrink: 1;
+    padding: 1em 3em;
+  }
+
+  #subtitles {
+    background-color: #00000077;
+    color: #eee;
+    padding: 1em;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: scale(0.8);
+    filter: blur(8px);
+    transition: opacity 0.35s, transform 0.35s, filter 0.35s;
+    font-size: .9rem;
+  }
+
+  #subtitles.visible {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+
+  #subtitle-heading {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #ffffff;
+  }
+
+
+  .KDCA.Tower {
+    color: #ffe600;
+  }

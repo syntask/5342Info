@@ -1,9 +1,0 @@
-Research
-Heli:
-https://globe.adsbexchange.com/?icao=ae313d&lat=38.867&lon=-77.205&zoom=10.8&showTrace=2025-01-30&timestamp=1738201533
-Jet:
-https://globe.adsbexchange.com/?icao=a97753&lat=38.882&lon=-77.107&zoom=11.1&showTrace=2025-01-30&timestamp=1738201533
-
-
-Orbit altitude:
-https://github.com/maplibre/maplibre-gl-js/issues/3683
