@@ -465,6 +465,15 @@ function loadChartOverlay(chartId) {
       map.moveLayer(flightTrackId);
     }
   }
+  // Also, reorder flight 3D model layers (if present) to the top.
+  for (const flightId in flightsData) {
+    if (flightsData[flightId].modelLoaded) {
+      const flightModelId = flightsData[flightId].layerId;
+      if (map.getLayer(flightModelId)) {
+        map.moveLayer(flightModelId);
+      }
+    }
+  }
 }
 
 function removeChartOverlay(chartId) {
