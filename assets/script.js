@@ -35,7 +35,6 @@ audioPlayer.addEventListener('timeupdate', () => {
   currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
 });
 
-
 // If the user seeks via the slider while audio is playing, pause the audio, then play again when the mouse button is released.
 var seekingWhilePlaying = false;
 seekSlider.addEventListener('mousedown', () => {
@@ -53,7 +52,6 @@ seekSlider.addEventListener('mouseup', () => {
 
 // Allow seeking via the slider.
 seekSlider.addEventListener('input', () => {
-
   audioPlayer.currentTime = seekSlider.value;
 });
 
@@ -71,16 +69,13 @@ playPauseButton.addEventListener('click', () => {
 function formatTime(time) {
   time = time + audioStart;
   // convert from unix epoch to human-readable time
-
   const date = new Date(time * 1000);
-
   const timeStr = new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
     second: '2-digit',
     timeZone: 'America/New_York' // Set timezone to Eastern Time
   }).format(date);
-
   return timeStr;
 }
 
@@ -267,7 +262,6 @@ const subtitlesObj = document.getElementById('subtitles');
 var subtitles = [];
 
 // Load the subtitles from atc-transcript.json
-
 fetch('assets/atc-transcript.json')
   .then(response => response.json())
   .then(data => {
@@ -324,6 +318,8 @@ function animate() {
 animate();
 
 // ----- Flight Rendering Code for 3D Models -----
+// Note: The only change here is after adding the layer we immediately set its visibility
+// based on the current 3D toggle state.
 function addStlModel(flightId, modelUrl, color) {
   const customLayer = {
     id: flightsData[flightId].layerId,
@@ -384,6 +380,11 @@ function addStlModel(flightId, modelUrl, color) {
     }
   };
   map.addLayer(customLayer);
+  
+  // >>> NEW CODE: Hide 3D aircraft by default
+  const is3DEnabled = document.querySelector('#toggle3d').checked;
+  map.setLayoutProperty(flightsData[flightId].layerId, 'visibility', is3DEnabled ? 'visible' : 'none');
+  // <<< END NEW CODE
 }
 
 document.querySelector('#toggle2d').addEventListener('change', (e) => {
@@ -426,7 +427,6 @@ function toggleTracks(visible) {
     map.setLayoutProperty(flightId + '-layer', 'visibility', visible ? 'visible' : 'none');
   }
 }
-
 
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
@@ -524,37 +524,37 @@ map.on('load', () => {
   });
 
   // Add a raster source for satellite imagery
-map.addSource('satellite-source', {
-  type: 'raster',
-  tiles: [
-    `https://api.maptiler.com/tiles/satellite/{z}/{x}/{y}.jpg?key=${MAPTILER_API_KEY}`
-  ],
-  tileSize: 256,
-});
+  map.addSource('satellite-source', {
+    type: 'raster',
+    tiles: [
+      `https://api.maptiler.com/tiles/satellite/{z}/{x}/{y}.jpg?key=${MAPTILER_API_KEY}`
+    ],
+    tileSize: 256,
+  });
 
-// Add the satellite layer BELOW the "Road labels" layer
-map.addLayer({
-  id: 'satellite-layer',
-  type: 'raster',
-  source: 'satellite-source',
-  layout: {
-    visibility: 'none' // Start hidden, will be toggled on selection
-  },
-  paint: {
-    'raster-opacity': 1
-  }
-}, "Road labels"); // <-- This ensures it's inserted below road labels
+  // Add the satellite layer BELOW the "Road labels" layer
+  map.addLayer({
+    id: 'satellite-layer',
+    type: 'raster',
+    source: 'satellite-source',
+    layout: {
+      visibility: 'none' // Start hidden, will be toggled on selection
+    },
+    paint: {
+      'raster-opacity': 1
+    }
+  }, "Road labels"); // <-- This ensures it's inserted below road labels
 
-const basemapSelector = document.getElementById('basemap');
-basemapSelector.addEventListener('change', (e) => {
-  if (e.target.value === 'satellite') {
-    // Show the satellite layer
-    map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
-  } else if (e.target.value === 'dark') {
-    // Hide the satellite layer
-    map.setLayoutProperty('satellite-layer', 'visibility', 'none');
-  }
-});
+  const basemapSelector = document.getElementById('basemap');
+  basemapSelector.addEventListener('change', (e) => {
+    if (e.target.value === 'satellite') {
+      // Show the satellite layer
+      map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
+    } else if (e.target.value === 'dark') {
+      // Hide the satellite layer
+      map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+    }
+  });
 
 
   function addFlight(id, dataUrl, color, modelUrl, modelScale) {
@@ -657,14 +657,12 @@ basemapSelector.addEventListener('change', (e) => {
   */
 
   // Add an image to the map
-
   var coords = [
     [-77.47, 39.271],
     [-76.67, 39.271],
     [-76.67, 38.301],
     [-77.47, 38.301]
   ];
-
 
   map.addSource('tac-chart', {
     type: 'image',
@@ -753,6 +751,5 @@ basemapSelector.addEventListener('change', (e) => {
   });
 
   map.setLayoutProperty('ils-01-layer', 'visibility', 'none');
-
   
 });
