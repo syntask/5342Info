@@ -22,7 +22,6 @@
   <meta property="og:locale" content="en_US" />
   <meta name="twitter:card" content="summary_large_image" />
 
-
   <!-- PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -87,6 +86,29 @@
             <input type="checkbox" id="toggleTracks" checked>
             <i></i>
           </label>
+        </div>
+
+        <div class="option-seperator"></div>
+
+        <div class="option-span">
+          <label for="basemap">Basemap:</label>
+          <select id="basemap">
+            <option value="dark">Default</option>
+            <option value="satellite">Satellite</option>
+          </select>
+        </div>
+
+        <div class="option-seperator"></div>
+
+        <div class="option-span">
+          <label for="chartOverlay">Overlay:</label>
+          <select id="chartOverlay">
+            <option value="none">None</option>
+            <option value="tac-chart">TAC Chart</option>
+            <option value="heli-chart">Heli Chart</option>
+            <option value="rnav-33">RNAV 33 Appch Plate</option>
+            <option value="ils-01">ILS 01 Appch Plate</option>
+          </select>
         </div>
 
         <div class="option-seperator"></div>

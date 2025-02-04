@@ -26,6 +26,7 @@ const durationSpan = document.getElementById('duration');
 audioPlayer.addEventListener('loadedmetadata', () => {
   seekSlider.max = audioPlayer.duration;
   durationSpan.textContent = formatTime(audioPlayer.duration);
+  currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
 });
 
 // Update the slider and current time display as the audio plays.
@@ -34,8 +35,25 @@ audioPlayer.addEventListener('timeupdate', () => {
   currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
 });
 
+
+// If the user seeks via the slider while audio is playing, pause the audio, then play again when the mouse button is released.
+var seekingWhilePlaying = false;
+seekSlider.addEventListener('mousedown', () => {
+  if (!audioPlayer.paused){
+    audioPlayer.pause();
+    seekingWhilePlaying = true;
+  }
+});
+seekSlider.addEventListener('mouseup', () => {
+  if (seekingWhilePlaying){
+    audioPlayer.play();
+    seekingWhilePlaying = false;
+  }
+});
+
 // Allow seeking via the slider.
 seekSlider.addEventListener('input', () => {
+
   audioPlayer.currentTime = seekSlider.value;
 });
 
@@ -51,9 +69,19 @@ playPauseButton.addEventListener('click', () => {
 });
 
 function formatTime(time) {
-  const minutes = Math.floor(time / 60);
-  const seconds = Math.floor(time % 60);
-  return minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+  time = time + audioStart;
+  // convert from unix epoch to human-readable time
+
+  const date = new Date(time * 1000);
+
+  const timeStr = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZone: 'America/New_York' // Set timezone to Eastern Time
+  }).format(date);
+
+  return timeStr;
 }
 
 // === Flight Simulation Code (unchanged) ===
@@ -62,15 +90,19 @@ var flightFollowing = null;
 
 // Define the audio time segment (simulation time offset)
 const audioStart = 1738201500; // simulation time corresponding to audio time 0
-const audioEnd = 1738201800;
 var simTime = audioStart;
+
+const MAPTILER_API_KEY = 'g9TJmRrNpggoZS9Br475';
+const basemapDark = 'https://api.maptiler.com/maps/7048f857-1a55-41fd-af70-6719704981e9/style.json';
+
+var mapStyle = basemapDark;
 
 // Initialize MapLibre map.
 const map = new maplibregl.Map({
   container: 'map',
-  style: 'https://api.maptiler.com/maps/d856b495-1396-447c-80d5-0fd7fca006e0/style.json?key=uxGPO18AyvxUdEGKe02K',
-  zoom: 12,
-  center: [-77.024841, 38.84221],
+  style: mapStyle + '?key=' + MAPTILER_API_KEY,
+  zoom: 11,
+  center: [-77.05, 38.84],
   pitch: 0,
   maxPitch: 88,
   canvasContextAttributes: { antialias: true }
@@ -426,12 +458,47 @@ cameraPosition.addEventListener('change', (e) => {
     }
     if (e.target.value === 'default') {
       map.flyTo({
-        center: [-77.024841, 38.84221],
-        zoom: 12,
+        zoom: 11,
+        center: [-77.05, 38.84],
         pitch: 0,
         bearing: 0
       });
     }
+  }
+});
+
+const chartOverlay = document.getElementById('chartOverlay');
+chartOverlay.addEventListener('change', (e) => {
+  const chartId = e.target.value;
+  if (e.target.value === 'tac-chart') {
+    map.setLayoutProperty('tac-chart-layer', 'visibility', 'visible');
+    map.setLayoutProperty('heli-chart-layer', 'visibility', 'none');
+    map.setLayoutProperty('rnav-33-layer', 'visibility', 'none');
+    map.setLayoutProperty('ils-01-layer', 'visibility', 'none');
+  }
+  if (e.target.value === 'heli-chart') {
+    map.setLayoutProperty('tac-chart-layer', 'visibility', 'none');
+    map.setLayoutProperty('heli-chart-layer', 'visibility', 'visible');
+    map.setLayoutProperty('rnav-33-layer', 'visibility', 'none');
+    map.setLayoutProperty('ils-01-layer', 'visibility', 'none');
+  }
+  if (e.target.value === 'rnav-33') {
+    map.setLayoutProperty('tac-chart-layer', 'visibility', 'none');
+    map.setLayoutProperty('heli-chart-layer', 'visibility', 'none');
+    map.setLayoutProperty('rnav-33-layer', 'visibility', 'visible');
+    map.setLayoutProperty('ils-01-layer', 'visibility', 'none');
+  }
+  if (e.target.value === 'ils-01') {
+    map.setLayoutProperty('tac-chart-layer', 'visibility', 'none');
+    map.setLayoutProperty('heli-chart-layer', 'visibility', 'none');
+    map.setLayoutProperty('rnav-33-layer', 'visibility', 'none');
+    map.setLayoutProperty('ils-01-layer', 'visibility', 'visible');
+  }
+  if (e.target.value === 'none') {
+    map.setLayoutProperty('tac-chart-layer', 'visibility', 'none');
+    map.setLayoutProperty('heli-chart-layer', 'visibility', 'none');
+    map.setLayoutProperty('rnav-33-layer', 'visibility', 'none');
+    map.setLayoutProperty('ils-01-layer', 'visibility', 'none');
   }
 });
 
@@ -455,6 +522,40 @@ map.on('load', () => {
       0
     ]
   });
+
+  // Add a raster source for satellite imagery
+map.addSource('satellite-source', {
+  type: 'raster',
+  tiles: [
+    `https://api.maptiler.com/tiles/satellite/{z}/{x}/{y}.jpg?key=${MAPTILER_API_KEY}`
+  ],
+  tileSize: 256,
+});
+
+// Add the satellite layer BELOW the "Road labels" layer
+map.addLayer({
+  id: 'satellite-layer',
+  type: 'raster',
+  source: 'satellite-source',
+  layout: {
+    visibility: 'none' // Start hidden, will be toggled on selection
+  },
+  paint: {
+    'raster-opacity': 1
+  }
+}, "Road labels"); // <-- This ensures it's inserted below road labels
+
+const basemapSelector = document.getElementById('basemap');
+basemapSelector.addEventListener('change', (e) => {
+  if (e.target.value === 'satellite') {
+    // Show the satellite layer
+    map.setLayoutProperty('satellite-layer', 'visibility', 'visible');
+  } else if (e.target.value === 'dark') {
+    // Hide the satellite layer
+    map.setLayoutProperty('satellite-layer', 'visibility', 'none');
+  }
+});
+
 
   function addFlight(id, dataUrl, color, modelUrl, modelScale) {
     map.addSource(id + '-source', { type: 'geojson', data: dataUrl });
@@ -548,8 +649,110 @@ map.on('load', () => {
   addFlight('N765US', './assets/N765US-track.geojson', '#30d158', './assets/CRJ7.stl', 1 / 300);
   addFlight('N941NN', './assets/N941NN-track.geojson', '#bf5af2', './assets/CRJ7.stl', 1 / 300);
 
+  /*
   const interval = setInterval(() => {
     // Console.log the current camera position, bearing, pitch, and zoom.
     console.log(map.getCenter(), map.getBearing(), map.getPitch(), map.getZoom());
   }, 5000);
+  */
+
+  // Add an image to the map
+
+  var coords = [
+    [-77.47, 39.271],
+    [-76.67, 39.271],
+    [-76.67, 38.301],
+    [-77.47, 38.301]
+  ];
+
+
+  map.addSource('tac-chart', {
+    type: 'image',
+    url: 'assets/tac-chart.jpg',
+    coordinates: [
+      [-78.742661, 39.82934],
+      [-75.746974, 39.83134],
+      [-75.751074, 38.165825],
+      [-78.735661, 38.137825]
+    ]
+  });
+
+  map.addLayer({
+    id: 'tac-chart-layer',
+    type: 'raster',
+    source: 'tac-chart',
+    paint: {
+      'raster-opacity': 1
+    }
+  });
+
+  map.setLayoutProperty('tac-chart-layer', 'visibility', 'none');
+
+  map.addSource('heli-chart', {
+    type: 'image',
+    url: 'assets/heli-chart.jpg',
+    coordinates: [
+      [-77.121504, 38.960631],
+      [-76.937853, 38.960631],
+      [-76.937853, 38.774585],
+      [-77.121504, 38.774585]
+    ]
+  });
+
+  map.addLayer({
+    id: 'heli-chart-layer',
+    type: 'raster',
+    source: 'heli-chart',
+    paint: {
+      'raster-opacity': 1
+    }
+  });
+
+  map.setLayoutProperty('heli-chart-layer', 'visibility', 'none');
+
+  map.addSource('rnav-33', {
+    type: 'image',
+    url: 'assets/rnav-33-dark.png',
+    coordinates: [
+      [-77.47, 39.271],
+      [-76.67, 39.271],
+      [-76.67, 38.301],
+      [-77.47, 38.301]
+    ]
+  });
+
+  map.addLayer({
+    id: 'rnav-33-layer',
+    type: 'raster',
+    source: 'rnav-33',
+    paint: {
+      'raster-opacity': 1
+    }
+  });
+
+  map.setLayoutProperty('rnav-33-layer', 'visibility', 'none');
+
+  map.addSource('ils-01', {
+    type: 'image',
+    url: 'assets/ils-01-dark.png',
+    coordinates: [
+      [-77.428, 39.2201], 
+      [-76.609, 39.2201], 
+      [-76.609, 38.2551], 
+      [-77.428, 38.2551]
+    ]
+  });
+
+  map.addLayer({
+    id: 'ils-01-layer',
+    type: 'raster',
+    source: 'ils-01',
+    paint: {
+      'raster-opacity': 1
+    }
+  });
+
+  map.setLayoutProperty('ils-01-layer', 'visibility', 'none');
+
+  
 });
