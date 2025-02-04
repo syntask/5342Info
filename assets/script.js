@@ -251,7 +251,7 @@ function updateFlightPositions(simulationTime) {
   map.triggerRepaint();
 }
 
-// Instead of using the original 'atcAudio', we now use our custom-controlled audioPlayer.
+// Instead of using the original audio, we now update positions during audio playback.
 audioPlayer.addEventListener('timeupdate', () => {
   const simTime = audioPlayer.currentTime + audioStart;
   updateFlightPositions(simTime);
@@ -318,8 +318,7 @@ function animate() {
 animate();
 
 // ----- Flight Rendering Code for 3D Models -----
-// Note: The only change here is after adding the layer we immediately set its visibility
-// based on the current 3D toggle state.
+// This function creates a custom 3D layer using Three.js.
 function addStlModel(flightId, modelUrl, color) {
   const customLayer = {
     id: flightsData[flightId].layerId,
@@ -380,19 +379,36 @@ function addStlModel(flightId, modelUrl, color) {
     }
   };
   map.addLayer(customLayer);
-  
-  // >>> NEW CODE: Hide 3D aircraft by default
-  const is3DEnabled = document.querySelector('#toggle3d').checked;
-  map.setLayoutProperty(flightsData[flightId].layerId, 'visibility', is3DEnabled ? 'visible' : 'none');
-  // <<< END NEW CODE
+  // No need to force visibility here since we load or remove the layer based on the toggle.
 }
 
+// ----- Event Listeners for Toggles -----
 document.querySelector('#toggle2d').addEventListener('change', (e) => {
   toggle2d(e.target.checked);
 });
+
+// New toggle3d handler: conditionally load or unload 3D models.
 document.querySelector('#toggle3d').addEventListener('change', (e) => {
-  toggle3d(e.target.checked);
+  const enabled = e.target.checked;
+  if (enabled) {
+    // For any flight that hasn't loaded its 3D model, load it now.
+    for (const flightId in flightsData) {
+      if (!flightsData[flightId].modelLoaded) {
+        addStlModel(flightId, flightsData[flightId].modelUrl, flightsData[flightId].color);
+        flightsData[flightId].modelLoaded = true;
+      }
+    }
+  } else {
+    // Remove 3D layers to free up resources.
+    for (const flightId in flightsData) {
+      if (flightsData[flightId].modelLoaded && map.getLayer(flightsData[flightId].layerId)) {
+        map.removeLayer(flightsData[flightId].layerId);
+        flightsData[flightId].modelLoaded = false;
+      }
+    }
+  }
 });
+
 document.querySelector('#toggleTracks').addEventListener('change', (e) => {
   toggleTracks(e.target.checked);
 });
@@ -409,15 +425,6 @@ function toggle2d(visible) {
     }
     if (flightObj.labelMarker) {
       flightObj.labelMarker.getElement().style.display = visible ? 'block' : 'none';
-    }
-  }
-}
-
-function toggle3d(visible) {
-  for (const flightId in flightsData) {
-    const flightObj = flightsData[flightId];
-    if (flightObj.layerId) {
-      map.setLayoutProperty(flightObj.layerId, 'visibility', visible ? 'visible' : 'none');
     }
   }
 }
@@ -439,7 +446,7 @@ cameraPosition.addEventListener('change', (e) => {
     updateFlightPositions(simTime);
   } else {
     flightFollowing = null;
-    if (e.target.value ==='tower') {
+    if (e.target.value === 'tower') {
       flightFollowing = null;
       map.flyTo({
         center: [-77.0395745296994,38.8520164066407],
@@ -593,7 +600,9 @@ map.on('load', () => {
               tail: tail,
               modelTransform: modelTransform,
               layerId: id + '-model',
-              scale: modelScale
+              scale: modelScale,
+              modelLoaded: false,      // flag for 3D model load status
+              modelUrl: modelUrl         // store model URL for on-demand loading
             };
             const initialCoord = trackArray.length ? trackArray[0].coord : [0, 0];
 
@@ -628,7 +637,11 @@ map.on('load', () => {
             flightsData[id].labelMarker = labelMarker;
             flightsData[id].labelElement = labelElement;
 
-            addStlModel(id, modelUrl, color);
+            // Conditionally add the 3D model if the 3D toggle is enabled.
+            if (document.querySelector('#toggle3d').checked) {
+              addStlModel(id, modelUrl, color);
+              flightsData[id].modelLoaded = true;
+            }
 
             const cameraPosition = document.getElementById('cameraPosition');
             const option = document.createElement('option');
@@ -751,5 +764,4 @@ map.on('load', () => {
   });
 
   map.setLayoutProperty('ils-01-layer', 'visibility', 'none');
-  
 });
