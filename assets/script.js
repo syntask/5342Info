@@ -251,8 +251,8 @@ function updateFlightPositions(simulationTime) {
   map.triggerRepaint();
 }
 
-// Instead of using the original audio playback to update positions, we update
-// positions during audio playback.
+// Instead of using the original audio playback to update positions,
+// we update positions during audio playback.
 audioPlayer.addEventListener('timeupdate', () => {
   const simTime = audioPlayer.currentTime + audioStart;
   updateFlightPositions(simTime);
@@ -377,7 +377,6 @@ function addStlModel(flightId, modelUrl, color) {
 }
 
 // ----- Overlay Charts Conditional Loading -----
-// Instead of adding all chart overlays on load, we load them on demand.
 const chartsData = {
   "tac-chart": { loaded: false },
   "heli-chart": { loaded: false },
@@ -459,6 +458,13 @@ function loadChartOverlay(chartId) {
     });
     chartsData["ils-01"].loaded = true;
   }
+  // Reorder flight track layers to the top so that overlays appear underneath.
+  for (const flightId in flightsData) {
+    const flightTrackId = flightId + '-layer';
+    if (map.getLayer(flightTrackId)) {
+      map.moveLayer(flightTrackId);
+    }
+  }
 }
 
 function removeChartOverlay(chartId) {
@@ -483,7 +489,7 @@ function removeChartOverlay(chartId) {
 
 document.getElementById('chartOverlay').addEventListener('change', (e) => {
   const selectedChart = e.target.value; // Possible values: 'none', 'tac-chart', 'heli-chart', 'rnav-33', 'ils-01'
-  // First, remove any loaded chart overlays.
+  // Remove any loaded chart overlays.
   Object.keys(chartsData).forEach(chartId => {
     if (chartsData[chartId].loaded) {
       removeChartOverlay(chartId);
