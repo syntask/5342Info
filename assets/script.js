@@ -728,7 +728,6 @@ map.on('load', () => {
     });
   }
 
-  // Add your flights.
   addFlight('AE313D', './assets/AE313D-track.geojson', '#ff453a', './assets/UH-60.stl', 1 / 1200);
   addFlight('N709PS', './assets/N709PS-track.geojson', '#0a84ff', './assets/CRJ7.stl', 1 / 300);
   addFlight('N765US', './assets/N765US-track.geojson', '#30d158', './assets/CRJ7.stl', 1 / 300);
@@ -741,5 +740,4 @@ map.on('load', () => {
   }, 5000);
   */
 
-  // Note: The chart overlay sources and layers are no longer added here.
 });
